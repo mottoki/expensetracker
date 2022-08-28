@@ -1,12 +1,14 @@
 import os
 
 from deta import Deta
-from dotenv import load_dotenv
+import streamlit as st
+# from dotenv import load_dotenv
 
-load_dotenv(".env")
-DETA_KEY = os.getenv("DETA_KEY")
+# load_dotenv(".env")
+# DETA_KEY = os.getenv("DETA_KEY")
+# deta = Deta(DETA_KEY)
 
-deta = Deta(DETA_KEY)
+deta = Deta(st.secrets["deta_key"])
 
 db = deta.Base("monthly_report")
 

@@ -127,6 +127,8 @@ upload_to_database.py
 
 Pipfile
 
+.streamlit/secrets.toml
+
 # Environments
 .env
 .venv
