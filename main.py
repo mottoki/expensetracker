@@ -22,6 +22,18 @@ layout = "centered"
 st.set_page_config(page_title=page_title, layout=layout) #page_icon=page_icon
 st.title(page_title) #+ " " + page_icon)
 
+# --- HIDE STREAMLIT STYLE ---
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --------------------------------------
+
 # --------------- USER AUTHENTIFICATION ---------------------------
 users = db.fetch_all_users()
 # print(users)
@@ -63,17 +75,17 @@ if authentication_status:
         years = [item["years"] for item in items]
         return years
 
-    # --- HIDE STREAMLIT STYLE ---
-    hide_st_style = """
-                <style>
-                #MainMenu {visibility: hidden;}
-                footer {visibility: hidden;}
-                header {visibility: hidden;}
-                </style>
-                """
-    st.markdown(hide_st_style, unsafe_allow_html=True)
+    # # --- HIDE STREAMLIT STYLE ---
+    # hide_st_style = """
+    #             <style>
+    #             #MainMenu {visibility: hidden;}
+    #             footer {visibility: hidden;}
+    #             header {visibility: hidden;}
+    #             </style>
+    #             """
+    # st.markdown(hide_st_style, unsafe_allow_html=True)
 
-    # --------------------------------------
+    # # --------------------------------------
 
     authenticator.logout("Logout", "sidebar")
     st.sidebar.header(f"Welcome {name}")
@@ -86,8 +98,10 @@ if authentication_status:
         year = int(st.session_state["year"])
         month = months.index(st.session_state["month"])
         # print(calendar.monthrange(year, month)[1])
-        num_days = calendar.monthrange(year, month)[1]
-        days = [day for day in range(1, num_days)]
+        num_days = calendar.monthrange(year, month+1)[1] # Add one to get the correct month
+        days = [day for day in range(1, num_days+1)] # Add one to get the correct no of days of the month
+        # print(year, month, days)
+        # print(calendar.monthrange(year,month+1))
 
         col3.selectbox("Select Day:", days, key="day", index=datetime.today().day-1)
         day = int(st.session_state["day"])
