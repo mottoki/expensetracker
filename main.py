@@ -78,7 +78,8 @@ if authentication_status:
     authenticator.logout("Logout", "sidebar")
     st.sidebar.header(f"Welcome {name}")
     st.sidebar.subheader(f"Data Entry in {currency}")
-    with st.sidebar.form("entry_form", clear_on_submit=True):
+    # ------------ DATA ENTRY SIDEBAR ------------------------
+    with st.sidebar:
         col1, col2, col3 = st.columns(3)
         col1.selectbox("Select Year:", years, key="year", index=0)
         col2.selectbox("Select Month:", months, key="month", index=datetime.today().month-1)
@@ -89,29 +90,41 @@ if authentication_status:
         days = [day for day in range(1, num_days)]
 
         col3.selectbox("Select Day:", days, key="day", index=datetime.today().day-1)
+        day = int(st.session_state["day"])
+
+        years = str(st.session_state["year"])
+        period = str(st.session_state["year"]) + "_" + str(st.session_state["month"])
+        dates = str(st.session_state["year"]) + "_" + str(st.session_state["month"]) + "_" + str(st.session_state["day"])
+        res = db.fetch_all_periods()
+
+        ex_expenses = dict.fromkeys(expenses, 0)
+        ex_incomes = dict.fromkeys(incomes, 0)
+        for i in range(len(res)):
+            if res[i]['key'] == dates:
+                ex_expenses = res[i]['expenses']
+                ex_incomes = res[i]['incomes']
 
         "---"
-        with st.expander("Income"):
-            for income in incomes:
-                st.number_input(f"{income}:", min_value=0, format="%i", step=10, key=income)
-        with st.expander("Expenses"):
-            for expense in expenses:
-                st.number_input(f"{expense}:", min_value=0, format="%i", step=10, key=expense)
-        # with st.expander("Comment"):
-        #     comment = st.text_area("", placeholder="Enter a comment here ...")
+        with st.sidebar.form("entry_form"):
+            with st.expander("Income"):
+                for key, val in ex_incomes.items():
+                    st.number_input(f"{key}:", min_value=0, format="%i", step=10, key=key, value=val)
+
+            with st.expander("Expenses"):
+                for key, val in ex_expenses.items():
+                    st.number_input(f"{key}:", min_value=0, format="%i", step=10, key=key, value=val)
+            # with st.expander("Comment"):
+            #     comment = st.text_area("", placeholder="Enter a comment here ...")
         
-        "---"
-        submitted = st.form_submit_button("Save Data")
-        if submitted:
-            entry_time = datetime.today()
-            entry = str(entry_time)
-            years = str(st.session_state["year"])
-            period = str(st.session_state["year"]) + "_" + str(st.session_state["month"])
-            dates = str(st.session_state["year"]) + "_" + str(st.session_state["month"]) + "_" + str(st.session_state["day"])
-            incomes = {income: st.session_state[income] for income in incomes}
-            expenses = {expense: st.session_state[expense] for expense in expenses}
-            db.insert_period(entry, years, period, dates, incomes, expenses)
-            st.success('Data saved!')
+            "---"
+            submitted = st.form_submit_button("Save Data")
+            if submitted:
+ 
+                incomes = {income: st.session_state[income] for income in incomes}
+                expenses = {expense: st.session_state[expense] for expense in expenses}
+                
+                db.insert_period(years, period, dates, incomes, expenses)
+                st.success('Data saved!')
 
     ## ------------ DATA VISUALISATION ------------------------------
     with st.form("saved_periods"):

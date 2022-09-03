@@ -12,9 +12,9 @@ deta = Deta(st.secrets["deta_key"])
 
 db = deta.Base("monthly_report")
 
-def insert_period(entry, years, period, dates, incomes, expenses):
+def insert_period(years, period, dates, incomes, expenses):
     """Returns the report on a successful creation, otherwise raises an error"""
-    return db.put({"key": entry, "years": years, "period": period, "dates": dates, "incomes": incomes, "expenses": expenses})
+    return db.put({"key": dates, "years": years, "period": period, "incomes": incomes, "expenses": expenses})
 
 def fetch_all_periods():
     """Returns a dict of all periods"""
@@ -31,6 +31,8 @@ def get_period(period):
     """If not found, the function will return None"""
     return db.fetch({"period": period})
 
+
+# ------------- USER DATABASE ------------------------
 dbu = deta.Base("users_db")
 
 def insert_user(username, name, password):
