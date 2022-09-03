@@ -13,7 +13,7 @@ import database as db
 
 # -------------- SETTINGS --------------
 incomes = ["Salary", "Investment Income", "Other Income"]
-expenses = ["Dining Out", "Utilities", "Groceries", "Transport", "Hobby", "Other Expenses"]
+expenses = ["Utilities", "Morgage", "Dining Out", "Groceries", "Transport", "Hobby", "Other Expenses"]
 currency = "AUD"
 page_title = "Expense Tracker"
 # page_icon = ":money_with_wings:"  # emojis: https://www.webfx.com/tools/emoji-cheat-sheet/
@@ -74,18 +74,6 @@ if authentication_status:
         items = db.fetch_all_periods()
         years = [item["years"] for item in items]
         return years
-
-    # # --- HIDE STREAMLIT STYLE ---
-    # hide_st_style = """
-    #             <style>
-    #             #MainMenu {visibility: hidden;}
-    #             footer {visibility: hidden;}
-    #             header {visibility: hidden;}
-    #             </style>
-    #             """
-    # st.markdown(hide_st_style, unsafe_allow_html=True)
-
-    # # --------------------------------------
 
     authenticator.logout("Logout", "sidebar")
     st.sidebar.header(f"Welcome {name}")
@@ -148,10 +136,15 @@ if authentication_status:
             # Get data from database
             period_data = db.get_period(period)
 
-            expenses = Counter()
+            expenses_need = Counter() # Need = Utilities and Morgage
+            expenses_want = Counter()
+            # print(expenses[:2])
             for elem in period_data.items:
                 for key, value in elem["expenses"].items():
-                    expenses[key] += value
+                    if key in expenses[:2]:
+                        expenses_need[key] += value
+                    else:
+                        expenses_want[key] += value
 
             incomes = Counter()
             for elem in period_data.items:
@@ -160,18 +153,24 @@ if authentication_status:
 
             # Create metrics
             total_income = sum(incomes.values())
-            total_expense = sum(expenses.values())
-            remaining_budget = total_income - total_expense
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Month Income", f"$ {total_income}")
-            col2.metric("Month Expense", f"$ {total_expense}")
-            col3.metric("Month Saving", f"$ {remaining_budget}")
+            total_expense_need = sum(expenses_need.values())
+            total_expense_want = sum(expenses_want.values())
+            remaining_budget = total_income - total_expense_need - total_expense_want
+            pct_expense_need = int((total_expense_need / total_income) * 100)
+            pct_expense_want = int((total_expense_want / total_income) * 100)
+            pct_remaining_budget = int((remaining_budget / total_income) * 100)
+            st.metric("Month Income", f"$ {total_income}")
+            col1, col2= st.columns(2)
+            col1.metric("Month Expense - Need", f"$ {total_expense_need} ({pct_expense_need} %)")
+            col2.metric("Month Expense - Want", f"$ {total_expense_want} ({pct_expense_want} %)")
+            st.metric("Month Saving", f"$ {remaining_budget} ({pct_remaining_budget} %)")
             # st.text(f"Comment: {comment}")
 
-            df = pd.DataFrame([expenses], columns=expenses.keys())
-            data = pd.DataFrame({'keys': expenses.keys(), 'values': expenses.values()})
+            expenses_merged = {**expenses_need, **expenses_want}
+            # print(expenses_merged)
+            data = pd.DataFrame({'keys': expenses_merged.keys(), 'values': expenses_merged.values()})
             c = alt.Chart(data).mark_bar().encode(
-                x='keys', y='values')
+                x=alt.X('keys', axis=alt.Axis(title=None)), y=alt.Y('values', axis=alt.Axis(title='$ (AUD)')))
 
             st.altair_chart(c, use_container_width=True)
 
@@ -190,6 +189,7 @@ if authentication_status:
             list_period = set(list_period)
 
             income_month = {}
+            income_invest_month = {}
             expense_month = {}
             for p in list_period:
                 expenses = Counter()
@@ -203,15 +203,21 @@ if authentication_status:
                             incomes[key] += value
 
                 # Create metrics
-                total_income = sum(incomes.values())
+                total_income_invest = sum(value for key, value in incomes.items() if key == 'Investment Income')
+                # print(total_income_invest)
+                total_income = sum(incomes.values()) - total_income_invest
                 total_expense = sum(expenses.values())
 
                 income_month[p] = total_income
+                income_invest_month[p] = total_income_invest
                 expense_month[p] = total_expense
 
             df1 = pd.DataFrame(income_month.items(), columns=["period", "income"])
-            df2 = pd.DataFrame(expense_month.items(), columns=["period", "expense"])
-            df = pd.merge(df1, df2, on="period")
+            df2 = pd.DataFrame(income_invest_month.items(), columns=["period", "investment income"])
+            df3 = pd.DataFrame(expense_month.items(), columns=["period", "expense"])
+
+            # df = pd.merge(df1, df2, df3, on="period")
+            df = df1.merge(df2, on="period").merge(df3, on="period")
             data = df.reset_index().melt('period', ignore_index = False)
 
             data = data[data['variable']!='index']
@@ -221,8 +227,10 @@ if authentication_status:
             data = data.sort_values('month')
 
             c = alt.Chart(data).mark_line().encode(
-                x=alt.X('month', axis=alt.Axis(tickMinStep=1)),
-                y='value',
-                color='variable')
+                x=alt.X('month', axis=alt.Axis(tickMinStep=1, title='Month')),
+                y=alt.Y('value', axis=alt.Axis(title='$ (AUD)')),
+                color=alt.Color('variable', legend=alt.Legend(
+                    orient='none',legendX=30, legendY=-16,
+                    direction='horizontal',titleAnchor='middle')))
             
             st.altair_chart(c, use_container_width=True)
