@@ -130,7 +130,10 @@ if authentication_status:
 
     ## ------------ DATA VISUALISATION ------------------------------
     with st.form("saved_periods"):
-        period = st.selectbox("Month Summary", set(get_all_periods()))
+        period_selection = list(set(get_all_periods()))
+        month_lookup = list(calendar.month_name[1:])
+        period_selection = sorted(period_selection, key=lambda x: (int(x.split('_')[0]), month_lookup.index(x.split('_')[1])), reverse=True)
+        period = st.selectbox("Month Summary", period_selection)
         submitted = st.form_submit_button("Plot")
         if submitted:
             # Get data from database
@@ -169,13 +172,23 @@ if authentication_status:
             expenses_merged = {**expenses_need, **expenses_want}
             # print(expenses_merged)
             data = pd.DataFrame({'keys': expenses_merged.keys(), 'values': expenses_merged.values()})
+            data['categories'] = 'Want'
+            data['categories'].loc[data['keys'].isin(expenses[:2])] = 'Need'
+            
             c = alt.Chart(data).mark_bar().encode(
-                x=alt.X('keys', axis=alt.Axis(title=None)), y=alt.Y('values', axis=alt.Axis(title='$ (AUD)')))
+                x=alt.X('keys', axis=alt.Axis(title=None), sort=alt.SortField('categories')), 
+                y=alt.Y('values', axis=alt.Axis(title='$ (AUD)')),
+                color=alt.Color('categories', legend=alt.Legend(
+                    orient='none',legendX=30, legendY=-17,
+                    direction='horizontal',titleAnchor='middle')),
+                tooltip=alt.Tooltip('values', format="$,.2f"))
 
             st.altair_chart(c, use_container_width=True)
 
     with st.form("saved_year"):
-        year = st.selectbox("Yearly tracker", set(get_all_years()))
+        year_selection = list(set(get_all_years()))
+        year_selection = sorted(year_selection, key=int, reverse=True)
+        year = st.selectbox("Yearly tracker", year_selection)
         res = db.get_year(year)
         # res = db.fetch_all_periods()
         # print(res)
@@ -226,11 +239,12 @@ if authentication_status:
             data['month'] = data['period'].str[5:].map(replacement_map)
             data = data.sort_values('month')
 
-            c = alt.Chart(data).mark_line().encode(
+            c = alt.Chart(data).mark_line(point=alt.OverlayMarkDef(filled=True, size=150), strokeWidth=5).encode(
                 x=alt.X('month', axis=alt.Axis(tickMinStep=1, title='Month')),
                 y=alt.Y('value', axis=alt.Axis(title='$ (AUD)')),
                 color=alt.Color('variable', legend=alt.Legend(
                     orient='none',legendX=30, legendY=-16,
-                    direction='horizontal',titleAnchor='middle')))
+                    direction='horizontal',titleAnchor='middle')),
+                tooltip=alt.Tooltip('value', format="$,.2f"))
             
             st.altair_chart(c, use_container_width=True)
