@@ -3,6 +3,7 @@ from datetime import datetime
 from logging import PlaceHolder  # Core Python Module
 import streamlit as st
 import streamlit_authenticator as stauth  # pip install streamlit-authenticator
+from st_aggrid import AgGrid
 # from streamlit_option_menu import option_menu  # pip install streamlit-option-menu
 import pandas as pd
 # import plotly.graph_objects as go
@@ -179,19 +180,21 @@ if authentication_status:
                 x=alt.X('keys', axis=alt.Axis(title=None), sort=alt.SortField('categories')), 
                 y=alt.Y('values', axis=alt.Axis(title='$ (AUD)')),
                 color=alt.Color('categories', legend=alt.Legend(
-                    orient='none',legendX=30, legendY=-17,
+                    orient='none',legendX=30, legendY=-18, labelFontSize=16,
                     direction='horizontal',titleAnchor='middle')),
                 tooltip=alt.Tooltip('values', format="$,.2f"))
 
             st.altair_chart(c, use_container_width=True)
+            
+            data.columns=['ITEM', 'TOTAL VALUE($)', 'CATEGORY']
+            AgGrid(data, fit_columns_on_grid_load=True)
 
     with st.form("saved_year"):
         year_selection = list(set(get_all_years()))
         year_selection = sorted(year_selection, key=int, reverse=True)
         year = st.selectbox("Yearly tracker", year_selection)
         res = db.get_year(year)
-        # res = db.fetch_all_periods()
-        # print(res)
+
         submitted_y = st.form_submit_button("Plot")
         if submitted_y:
 
@@ -204,6 +207,7 @@ if authentication_status:
             income_month = {}
             income_invest_month = {}
             expense_month = {}
+            saving_month = {}
             for p in list_period:
                 expenses = Counter()
                 incomes = Counter()
@@ -220,10 +224,13 @@ if authentication_status:
                 # print(total_income_invest)
                 total_income = sum(incomes.values()) - total_income_invest
                 total_expense = sum(expenses.values())
+                total_saving = total_income + total_income_invest - total_expense
 
                 income_month[p] = total_income
                 income_invest_month[p] = total_income_invest
                 expense_month[p] = total_expense
+
+                saving_month[p] = total_saving
 
             df1 = pd.DataFrame(income_month.items(), columns=["period", "income"])
             df2 = pd.DataFrame(income_invest_month.items(), columns=["period", "investment income"])
@@ -239,12 +246,42 @@ if authentication_status:
             data['month'] = data['period'].str[5:].map(replacement_map)
             data = data.sort_values('month')
 
+            df4 = pd.DataFrame(saving_month.items(), columns=["period", "saving"])
+            df4['month'] = df4['period'].str[5:].map(replacement_map)
+            df4 = df4.sort_values('month')
+            df4['cummulative'] = df4['saving'].cumsum()
+
             c = alt.Chart(data).mark_line(point=alt.OverlayMarkDef(filled=True, size=150), strokeWidth=5).encode(
                 x=alt.X('month', axis=alt.Axis(tickMinStep=1, title='Month')),
                 y=alt.Y('value', axis=alt.Axis(title='$ (AUD)')),
                 color=alt.Color('variable', legend=alt.Legend(
-                    orient='none',legendX=30, legendY=-16,
+                    orient='none',legendX=10, legendY=-16, labelFontSize=16,
                     direction='horizontal',titleAnchor='middle')),
                 tooltip=alt.Tooltip('value', format="$,.2f"))
             
+            c2 = alt.Chart(df4).mark_line(point=alt.OverlayMarkDef(filled=True, size=150), strokeWidth=5).encode(
+                x=alt.X('month', axis=alt.Axis(tickMinStep=1, title='Month')),
+                y=alt.Y('cummulative', axis=alt.Axis(title='Cummulative Saving $(AUD)')),
+                color=alt.value('#70F5C1'),
+                tooltip=alt.Tooltip('cummulative', format="$,.2f"))
+            
             st.altair_chart(c, use_container_width=True)
+
+            st.altair_chart(c2, use_container_width=True)
+
+            df = df1.merge(df2, on="period").merge(df3, on="period").merge(df4, on='period')
+            # data = df.reset_index().melt('period', ignore_index = False)
+            # data = data[data['variable']!='index']
+            # data['month'] = data['period'].str[5:].map(replacement_map)
+            df = df.sort_values('month')
+            # data = data[data.variable != 'month']
+            df = df.iloc[:, :-2]
+            df["period"] = df['period'].str[5:]
+            df.columns = ['MONTH', 'SALARY', 'INVESTMENT', 'EXPENSE', 'SAVING']
+            
+
+            # data.columns=['ITEM', 'TOTAL VALUE($)', 'CATEGORY']
+            AgGrid(df, fit_columns_on_grid_load=True)
+
+
+
