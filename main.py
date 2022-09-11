@@ -3,7 +3,7 @@ from datetime import datetime
 from logging import PlaceHolder  # Core Python Module
 import streamlit as st
 import streamlit_authenticator as stauth  # pip install streamlit-authenticator
-from st_aggrid import AgGrid
+# from st_aggrid import AgGrid
 # from streamlit_option_menu import option_menu  # pip install streamlit-option-menu
 import pandas as pd
 # import plotly.graph_objects as go
@@ -29,9 +29,12 @@ hide_st_style = """
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             header {visibility: hidden;}
+            thead tr th:first-child {display:none}
+            tbody th {display:none}
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
+
 
 # --------------------------------------
 
@@ -108,7 +111,7 @@ if authentication_status:
                 ex_incomes = res[i]['incomes']
 
         "---"
-        with st.sidebar.form("entry_form"):
+        with st.sidebar.form("entry_form", clear_on_submit=True):
             with st.expander("Income"):
                 for key, val in ex_incomes.items():
                     st.number_input(f"{key}:", min_value=0, format="%i", step=10, key=key, value=val)
@@ -187,7 +190,8 @@ if authentication_status:
             st.altair_chart(c, use_container_width=True)
             
             data.columns=['ITEM', 'TOTAL VALUE($)', 'CATEGORY']
-            AgGrid(data, fit_columns_on_grid_load=True)
+            # AgGrid(data, fit_columns_on_grid_load=True)
+            st.table(data)
 
     with st.form("saved_year"):
         year_selection = list(set(get_all_years()))
@@ -281,7 +285,8 @@ if authentication_status:
             
 
             # data.columns=['ITEM', 'TOTAL VALUE($)', 'CATEGORY']
-            AgGrid(df, fit_columns_on_grid_load=True)
+            # AgGrid(df, fit_columns_on_grid_load=True)
+            st.table(df)
 
 
 
