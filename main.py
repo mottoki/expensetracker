@@ -84,23 +84,39 @@ if authentication_status:
     st.sidebar.subheader(f"Data Entry in {currency}")
     # ------------ DATA ENTRY SIDEBAR ------------------------
     with st.sidebar:
-        col1, col2, col3 = st.columns(3)
-        col1.selectbox("Select Year:", years, key="year", index=0)
-        col2.selectbox("Select Month:", months, key="month", index=datetime.today().month-1)
-        year = int(st.session_state["year"])
-        month = months.index(st.session_state["month"])
-        # print(calendar.monthrange(year, month)[1])
-        num_days = calendar.monthrange(year, month+1)[1] # Add one to get the correct month
-        days = [day for day in range(1, num_days+1)] # Add one to get the correct no of days of the month
-        # print(year, month, days)
-        # print(calendar.monthrange(year,month+1))
+        # col1, col2, col3 = st.columns(3)
+        # col1.selectbox("Select Year:", years, key="year", index=0)
+        # col2.selectbox("Select Month:", months, key="month", index=datetime.today().month-1)
+        # year = int(st.session_state["year"])
+        # month = months.index(st.session_state["month"])
+        # print(year)
+        # print('month', month)
+        # # print(calendar.monthrange(year, month)[1])
+        # num_days = calendar.monthrange(year, month+1)[1] # Add one to get the correct month
+        # days = [day for day in range(1, num_days+1)] # Add one to get the correct no of days of the month
+        # # print(year, month, days)
+        # # print(calendar.monthrange(year,month+1))
 
-        col3.selectbox("Select Day:", days, key="day", index=datetime.today().day-1)
-        day = int(st.session_state["day"])
+        # col3.selectbox("Select Day:", days, key="day", index=datetime.today().day-1)
+        # day = int(st.session_state["day"])
+        # print(day)
+        # print(st.session_state["month"])
 
-        years = str(st.session_state["year"])
-        period = str(st.session_state["year"]) + "_" + str(st.session_state["month"])
-        dates = str(st.session_state["year"]) + "_" + str(st.session_state["month"]) + "_" + str(st.session_state["day"])
+
+
+        # years = str(st.session_state["year"])
+        # period = str(st.session_state["year"]) + "_" + str(st.session_state["month"])
+        # dates = str(st.session_state["year"]) + "_" + str(st.session_state["month"]) + "_" + str(st.session_state["day"])
+
+        st.date_input("Select Date", key='mydate', value=datetime.today())
+        mydate = st.session_state["mydate"]
+        myyear = mydate.year
+        mymonth = calendar.month_name[mydate.month]
+        myday = mydate.day
+        years = str(myyear)
+        period = str(myyear) + "_" + str(mymonth)
+        dates = str(myyear) + "_" + str(mymonth) + "_" + str(myday)
+        
         res = db.fetch_all_periods()
 
         ex_expenses = dict.fromkeys(expenses, 0)
