@@ -185,7 +185,8 @@ if authentication_status:
             # print(expenses_merged)
             data = pd.DataFrame({'keys': expenses_merged.keys(), 'values': expenses_merged.values()})
             data['categories'] = 'Want'
-            data['categories'].loc[data['keys'].isin(expenses[:2])] = 'Need'
+            data.loc[:1, 'categories'] = 'Need'
+            # data['categories'].loc[data['keys'].isin(expenses[:2])] = 'Need'
             
             c = alt.Chart(data).mark_bar().encode(
                 x=alt.X('keys', axis=alt.Axis(title=None), sort=alt.SortField('categories')), 
